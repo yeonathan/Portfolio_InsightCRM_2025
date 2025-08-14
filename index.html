@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord InsightCRM </title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+        .chart-container {
+            position: relative;
+            height: 256px; /* Fixed height for consistent layout */
+        }
+        #chatbox {
+            height: 400px;
+            overflow-y: auto;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 1rem;
+            margin-bottom: 8px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #3b82f6;
+            color: white;
+            align-self: flex-end;
+        }
+        .ai-message {
+            background-color: #e5e7eb;
+            color: #111827;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container p-8">
+        <!-- Dashboard Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-extrabold text-center text-blue-900 mb-2">Tableau de Bord InsightCRM</h1>
+            <p class="text-center text-gray-600">Visualisations dynamiques pour vos donnees clients.</p>
+        </header>
+
+        <!-- CSV Upload Section -->
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-8 flex flex-col items-center">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Telechargez Votre Fichier CSV</h2>
+            <input type="file" id="csvFileInput" accept=".csv" class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors duration-200" />
+            <span id="loadingMessage" class="mt-4 text-sm text-gray-500 hidden">Chargement et traitement des donnees...</span>
+        </div>
+
+        <!-- Message box for errors or success -->
+        <div id="messageBox" class="mb-4 p-4 rounded-lg text-sm transition-opacity duration-300 bg-gray-100 text-gray-700">
+            Tableau de bord charge. Veuillez telecharger un fichier CSV pour commencer.
+        </div>
+
+        <!-- KPIs Section - Now with 8 KPIs -->
+        <div id="kpiSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 hidden">
+            <!-- KPI 1: Total Sales -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Ventes Totales</p>
+                <p id="kpiTotalSales" class="text-2xl lg:text-3xl font-extrabold text-blue-800">...</p>
+            </div>
+            <!-- KPI 2: Total Profit -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Profit Total</p>
+                <p id="kpiTotalProfit" class="text-2xl lg:text-3xl font-extrabold text-green-700">...</p>
+            </div>
+            <!-- KPI 3: Average Sale Value -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Vente Moyenne</p>
+                <p id="kpiAvgSale" class="text-2xl lg:text-3xl font-extrabold text-purple-700">...</p>
+            </div>
+            <!-- KPI 4: Number of Transactions -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Nombre de Transactions</p>
+                <p id="kpiNumTransactions" class="text-2xl lg:text-3xl font-extrabold text-red-600">...</p>
+            </div>
+             <!-- NEW KPI 5: Best-selling Category -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Categorie la plus vendue</p>
+                <p id="kpiBestCategory" class="text-xl lg:text-2xl font-extrabold text-blue-800 truncate">...</p>
+            </div>
+            <!-- NEW KPI 6: Most Profitable Region -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Region la plus profitable</p>
+                <p id="kpiBestRegion" class="text-xl lg:text-2xl font-extrabold text-green-700 truncate">...</p>
+            </div>
+            <!-- NEW KPI 7: Average Profit Margin -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Marge de profit moyenne</p>
+                <p id="kpiAvgMargin" class="text-2xl lg:text-3xl font-extrabold text-purple-700">...</p>
+            </div>
+            <!-- NEW KPI 8: Month-over-Month Growth -->
+            <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                <p class="text-sm font-medium text-gray-500 mb-1">Croissance mensuelle des ventes</p>
+                <p id="kpiMOMGrowth" class="text-2xl lg:text-3xl font-extrabold text-red-600">...</p>
+            </div>
+        </div>
+
+        <!-- First 5 Lines Preview -->
+        <div id="dataPreviewSection" class="bg-white shadow-lg rounded-lg p-6 mb-8 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">5 premieres lignes de vos donnees</h2>
+            <div class="overflow-x-auto">
+                <table id="dataPreviewTable" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr></tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Dynamic Charts Section -->
+        <div id="chartsSection" class="grid grid-cols-1 md:grid-cols-2 gap-8 hidden">
+             <!-- New Chart 0: Pie Chart -->
+            <div class="bg-white shadow-lg rounded-lg p-6 col-span-1 md:col-span-2">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Repartition des Ventes par Categorie</h3>
+                <p class="text-gray-600 mb-4 text-sm">Affiche la part de marche de chaque categorie de produits en fonction des ventes totales.</p>
+                <div class="chart-container flex justify-center items-center">
+                    <canvas id="pieChart" class="max-w-md"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 1: K-Means Clustering -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Clustering K-Means</h3>
+                <p class="text-gray-600 mb-4 text-sm">Visualise les points de donnees groupes par similarite.</p>
+                <div class="chart-container">
+                    <canvas id="kMeansChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Histogram -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Histogramme des Ventes</h3>
+                <p class="text-gray-600 mb-4 text-sm">Montre la distribution des valeurs de ventes.</p>
+                <div class="chart-container">
+                    <canvas id="histogramChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Stacked Bar Chart (Stacked Histogram) -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Ventes Totales par Categorie</h3>
+                <p class="text-gray-600 mb-4 text-sm">Compare le total des ventes empilees par categorie de produit.</p>
+                <div class="chart-container">
+                    <canvas id="stackedHistogramChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Trends (Line Chart) -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Tendances des Ventes Mensuelles</h3>
+                <p class="text-gray-600 mb-4 text-sm">Suit la performance totale des ventes au fil du temps.</p>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 5: Temporal Series -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Serie Temporelle (Profit Quotidien)</h3>
+                <p class="text-gray-600 mb-4 text-sm">Met en evidence les fluctuations du profit sur une base quotidienne.</p>
+                <div class="chart-container">
+                    <canvas id="temporalSeriesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 6: Scattering -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Nuage de Points Profit vs Ventes</h3>
+                <p class="text-gray-600 mb-4 text-sm">Illustre la relation entre le profit et les ventes pour chaque point de donnees.</p>
+                <div class="chart-container">
+                    <canvas id="scatteringChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 7: Profit Prevision -->
+            <div class="bg-white shadow-lg rounded-lg p-6 col-span-1 md:col-span-2">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Prevision de Profit (Tendance Lineaire Simple)</h3>
+                <p class="text-gray-600 mb-4 text-sm">Montre les donnees de profit passees avec une ligne de regression lineaire simple pour predire les tendances futures.</p>
+                <div class="chart-container">
+                    <canvas id="previsionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Chatbot Section -->
+        <div id="aiChatSection" class="bg-white shadow-lg rounded-lg p-6 mt-8 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Assistant de Donnees Local</h2>
+            <p class="text-gray-600 mb-4 text-sm">
+                Cet assistant est base sur des regles simples pour analyser vos donnees localement. Posez-lui des questions specifiques pour obtenir des reponses rapides.
+            </p>
+            <div id="chatbox" class="flex flex-col space-y-2 mb-4 p-4 border rounded-lg bg-gray-50">
+                <div class="chat-message ai-message w-fit">
+                    Bonjour ! Cliquez sur un bouton pour poser une question :
+                    <div id="suggestionButtons" class="mt-2 flex flex-wrap gap-2">
+                        <button class="question-btn bg-blue-200 text-blue-800 hover:bg-blue-300 transition-colors duration-200 p-2 rounded-lg text-sm" data-question="ventes totales">Ventes totales</button>
+                        <button class="question-btn bg-blue-200 text-blue-800 hover:bg-blue-300 transition-colors duration-200 p-2 rounded-lg text-sm" data-question="profit total">Profit total</button>
+                        <button class="question-btn bg-blue-200 text-blue-800 hover:bg-blue-300 transition-colors duration-200 p-2 rounded-lg text-sm" data-question="nombre de transactions">Nombre de transactions</button>
+                        <button class="question-btn bg-blue-200 text-blue-800 hover:bg-blue-300 transition-colors duration-200 p-2 rounded-lg text-sm" data-question="moyenne des ventes">Moyenne des ventes</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex">
+                <input type="text" id="userInput" placeholder="Demandez quelque chose sur vos donnees..." class="flex-grow rounded-l-lg border-t border-b border-l text-gray-800 border-gray-200 bg-white p-3 text-sm focus:outline-none" />
+                <button id="sendBtn" class="bg-blue-600 text-white p-3 rounded-r-lg hover:bg-blue-700 transition-colors duration-200">Envoyer</button>
+            </div>
+        </div>
+
+        <!-- Advanced ML Features Section -->
+        <div id="advancedMLSection" class="bg-white shadow-lg rounded-lg p-6 mt-8 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Fonctionnalites ML avancees</h2>
+
+            <!-- 1. Sales Forecasting Chart -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Prevision des ventes (Tendance lineaire simple)</h3>
+                <p class="text-gray-600 mb-4 text-sm">Visualise les donnees de ventes passees et projette une tendance simple pour prevoir les ventes futures.</p>
+                <div class="chart-container">
+                    <canvas id="salesPrevisionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 2. Anomaly Detection Chart -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Detection d'anomalies (Ventes)</h3>
+                <p class="text-gray-600 mb-4 text-sm">Identifie et met en evidence les points de donnees qui s'ecartent significativement de la moyenne des ventes (plus de 2 ecarts-types).</p>
+                <div class="chart-container">
+                    <canvas id="anomalyDetectionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 3. Customer Sentiment Analysis -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Analyse de sentiment des clients (prototype)</h3>
+                <p class="text-gray-600 mb-4 text-sm">Analysez un commentaire client pour en determiner le sentiment (positif, neutre, negatif) a l'aide d'un simple modele base sur des mots-cles.</p>
+                <textarea id="sentimentInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 mb-2" rows="3" placeholder="Entrez un commentaire client ici..."></textarea>
+                <button id="analyzeSentimentBtn" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">Analyser</button>
+                <div id="sentimentResult" class="mt-4 p-4 rounded-lg text-white font-semibold hidden"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <!-- Chart.js Adapter for date handling -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- PapaParse CDN for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const csvFileInput = document.getElementById('csvFileInput');
+            const dataPreviewSection = document.getElementById('dataPreviewSection');
+            const kpiSection = document.getElementById('kpiSection');
+            const chartsSection = document.getElementById('chartsSection');
+            const aiChatSection = document.getElementById('aiChatSection');
+            const advancedMLSection = document.getElementById('advancedMLSection'); // New
+            const loadingMessage = document.getElementById('loadingMessage');
+            const messageBox = document.getElementById('messageBox');
+            const userInput = document.getElementById('userInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const chatbox = document.getElementById('chatbox');
+            const suggestionButtonsContainer = document.getElementById('suggestionButtons');
+            const sentimentInput = document.getElementById('sentimentInput'); // New
+            const analyzeSentimentBtn = document.getElementById('analyzeSentimentBtn'); // New
+            const sentimentResult = document.getElementById('sentimentResult'); // New
+
+            // Global variable to store parsed data
+            let parsedData = [];
+            // Global chart instances
+            let chartInstances = {};
+
+            // Helper function to remove accents and normalize strings
+            const normalizeString = (str) => {
+                if (typeof str !== 'string') return '';
+                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            };
+
+            // Function to show a message to the user
+            const showMessage = (text, type = 'info') => {
+                messageBox.textContent = text;
+                messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-gray-100', 'text-gray-700');
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                } else if (type === 'success') {
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                } else {
+                    messageBox.classList.add('bg-gray-100', 'text-gray-700');
+                }
+                setTimeout(() => {
+                    // Hide the message after 5 seconds, unless it's a permanent info message
+                    if (type !== 'info') {
+                        messageBox.classList.add('hidden');
+                    }
+                }, 5000);
+            };
+
+            // A fallback function to generate mock data if no file is uploaded
+            const generateMockData = () => {
+                const mockHeaders = ['date', 'category', 'sales', 'profit', 'region'];
+                const categories = ['Électronique', 'Articles ménagers', 'Vêtements', 'Livres'];
+                const regions = ['Nord', 'Sud', 'Est', 'Ouest'];
+                const today = new Date();
+                const mockRows = [];
+                for (let i = 0; i < 100; i++) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - i);
+                    const sales = Math.floor(Math.random() * 5000) + 100;
+                    const profit = Math.floor(Math.random() * 2000) - 500;
+                    const category = categories[Math.floor(Math.random() * categories.length)];
+                    const region = regions[Math.floor(Math.random() * regions.length)];
+                    mockRows.push({
+                        date: date.toISOString().slice(0, 10),
+                        category: category,
+                        sales: sales,
+                        profit: profit,
+                        region: region
+                    });
+                }
+                return { data: mockRows, meta: { fields: mockHeaders } };
+            };
+
+            // Function to load the dashboard with data (either mock or uploaded)
+            const loadDashboardWithData = (data, headers) => {
+                if (data && data.length > 0 && headers) {
+                    displayDataPreview(headers, data);
+                    renderKPIs(data);
+                    renderAllCharts(data);
+                    dataPreviewSection.classList.remove('hidden');
+                    kpiSection.classList.remove('hidden');
+                    chartsSection.classList.remove('hidden');
+                    aiChatSection.classList.remove('hidden');
+                    advancedMLSection.classList.remove('hidden'); // New
+                    showMessage('Donnees chargees avec succes !', 'success');
+                } else {
+                    showMessage('Le fichier CSV est vide ou le format est incorrect.', 'error');
+                    console.error('Erreur: Donnees invalides pour le rendu du tableau de bord.');
+                    // Hide all sections in case of an error
+                    dataPreviewSection.classList.add('hidden');
+                    kpiSection.classList.add('hidden');
+                    chartsSection.classList.add('hidden');
+                    aiChatSection.classList.add('hidden');
+                    advancedMLSection.classList.add('hidden'); // New
+                }
+            };
+
+            // Initial load with mock data
+            try {
+                const initialData = generateMockData();
+                parsedData = initialData.data;
+                if (parsedData.length > 0) {
+                    loadDashboardWithData(parsedData, initialData.meta.fields);
+                } else {
+                    console.error('Erreur: Impossible de generer les donnees de demonstration.');
+                }
+            } catch (e) {
+                console.error('Erreur lors du chargement initial avec des donnees de demonstration:', e);
+            }
+
+            // Listen for file upload
+            csvFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    loadingMessage.classList.remove('hidden');
+                    Papa.parse(file, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            if (results.errors.length > 0) {
+                                console.error('CSV Parsing Errors:', results.errors);
+                                showMessage(`Echec de l'analyse du CSV. Erreur : ${results.errors[0].message}`, 'error');
+                                loadingMessage.classList.add('hidden');
+                                return;
+                            }
+                            parsedData = results.data;
+                            loadDashboardWithData(parsedData, results.meta.fields);
+                            loadingMessage.classList.add('hidden');
+                        },
+                        error: (err) => {
+                            console.error('PapaParse Error:', err);
+                            showMessage(`Une erreur est survenue lors de l'analyse du fichier : ${err.message}`, 'error');
+                            loadingMessage.classList.add('hidden');
+                        }
+                    });
+                }
+            });
+
+            // AI Chatbot Functionality (Rule-based)
+            const addMessage = (text, sender) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.innerHTML = text; // Use innerHTML to handle line breaks
+                messageDiv.className = `chat-message ${sender}-message w-fit`;
+                chatbox.appendChild(messageDiv);
+                chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll to the bottom
+            };
+
+            const processUserQuestion = (question) => {
+                const normalizedQuestion = normalizeString(question);
+                let answer = "Désolé, je ne comprends pas cette question. Veuillez poser une question simple sur les donnees, comme 'ventes totales', 'profit pour electronique', 'ventes pour la region ouest', ou 'nombre de transactions'.";
+
+                if (parsedData.length === 0) {
+                    return "Veuillez d'abord telecharger un fichier CSV.";
+                }
+
+                const salesData = parsedData.map(d => typeof d.sales === 'number' ? d.sales : 0);
+                const profitData = parsedData.map(d => typeof d.profit === 'number' ? d.profit : 0);
+                const totalSales = salesData.reduce((sum, val) => sum + val, 0);
+                const totalProfit = profitData.reduce((sum, val) => sum + val, 0);
+
+                // General questions
+                if (normalizedQuestion.includes('ventes totales') || normalizedQuestion.includes('total des ventes')) {
+                    answer = `Les ventes totales sont de ${totalSales.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                } else if (normalizedQuestion.includes('profit total') || normalizedQuestion.includes('total des profits')) {
+                    answer = `Le profit total est de ${totalProfit.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                } else if (normalizedQuestion.includes('nombre de transactions')) {
+                    answer = `Il y a eu ${parsedData.length} transactions.`;
+                } else if (normalizedQuestion.includes('moyenne des ventes')) {
+                     const avgSale = totalSales / parsedData.length;
+                     answer = `La vente moyenne est de ${avgSale.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                } else {
+                    // Handle specific questions with a more robust regex-based approach
+                    const categoryRegex = /(ventes|profit) pour la categorie\s+['"]?([^'"]+)['"]?/i;
+                    const regionRegex = /(ventes|profit) pour la region\s+['"]?([^'"]+)['"]?/i;
+
+                    const categoryMatch = normalizedQuestion.match(categoryRegex);
+                    const regionMatch = normalizedQuestion.match(regionRegex);
+
+                    if (categoryMatch) {
+                        const metric = categoryMatch[1];
+                        const name = normalizeString(categoryMatch[2]);
+                        const categories = [...new Set(parsedData.map(d => normalizeString(String(d.category))))];
+
+                        if (categories.includes(name)) {
+                            if (metric === 'ventes') {
+                                const salesForCategory = parsedData
+                                    .filter(d => normalizeString(String(d.category)) === name)
+                                    .reduce((sum, d) => sum + (typeof d.sales === 'number' ? d.sales : 0), 0);
+                                answer = `Les ventes totales pour la categorie '${name}' sont de ${salesForCategory.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                            } else if (metric === 'profit') {
+                                const profitForCategory = parsedData
+                                    .filter(d => normalizeString(String(d.category)) === name)
+                                    .reduce((sum, d) => sum + (typeof d.profit === 'number' ? d.profit : 0), 0);
+                                answer = `Le profit total pour la categorie '${name}' est de ${profitForCategory.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                            }
+                        }
+                    } else if (regionMatch) {
+                        const metric = regionMatch[1];
+                        const name = normalizeString(regionMatch[2]);
+                        const regions = [...new Set(parsedData.map(d => normalizeString(String(d.region))))];
+
+                        if (regions.includes(name)) {
+                            if (metric === 'ventes') {
+                                const salesForRegion = parsedData
+                                    .filter(d => normalizeString(String(d.region)) === name)
+                                    .reduce((sum, d) => sum + (typeof d.sales === 'number' ? d.sales : 0), 0);
+                                answer = `Les ventes totales pour la region '${name}' sont de ${salesForRegion.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                            } else if (metric === 'profit') {
+                                const profitForRegion = parsedData
+                                    .filter(d => normalizeString(String(d.region)) === name)
+                                    .reduce((sum, d) => sum + (typeof d.profit === 'number' ? d.profit : 0), 0);
+                                answer = `Le profit total pour la region '${name}' est de ${profitForRegion.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}.`;
+                            }
+                        }
+                    }
+                }
+                return answer;
+            };
+
+            // Event listener for sending a message
+            sendBtn.addEventListener('click', () => {
+                const question = userInput.value.trim();
+                if (question) {
+                    addMessage(question, 'user');
+                    userInput.value = '';
+                    setTimeout(() => {
+                        const answer = processUserQuestion(question);
+                        addMessage(answer, 'ai');
+                    }, 500); // Simulate a small delay for a better user experience
+                }
+            });
+
+            // Event listener for suggestion buttons
+            suggestionButtonsContainer.addEventListener('click', (event) => {
+                const button = event.target.closest('.question-btn');
+                if (button) {
+                    const question = button.dataset.question;
+                    userInput.value = question;
+                    sendBtn.click();
+                }
+            });
+
+            userInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    sendBtn.click();
+                }
+            });
+
+            // Function to display the first 5 rows of data
+            const displayDataPreview = (headers, data) => {
+                const tableHead = document.getElementById('dataPreviewTable').querySelector('thead tr');
+                const tableBody = document.getElementById('dataPreviewTable').querySelector('tbody');
+
+                tableHead.innerHTML = '';
+                tableBody.innerHTML = '';
+
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                    tableHead.appendChild(th);
+                });
+
+                data.slice(0, 5).forEach(row => {
+                    const tr = document.createElement('tr');
+                    Object.values(row).forEach(cellValue => {
+                        const td = document.createElement('td');
+                        td.textContent = cellValue;
+                        td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-900';
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+            };
+
+            // Function to render the KPI cards (updated for 8 KPIs)
+            const renderKPIs = (data) => {
+                const salesData = data.map(d => typeof d.sales === 'number' ? d.sales : 0);
+                const profitData = data.map(d => typeof d.profit === 'number' ? d.profit : 0);
+                const numTransactions = data.length;
+
+                const totalSales = salesData.reduce((sum, val) => sum + val, 0);
+                const totalProfit = profitData.reduce((sum, val) => sum + val, 0);
+                const avgSale = numTransactions > 0 ? totalSales / numTransactions : 0;
+                const avgProfitMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+
+                // KPI 5: Best-selling Category
+                const salesByCategory = data.reduce((acc, row) => {
+                    const category = row.category;
+                    if (category && typeof row.sales === 'number') {
+                        acc[category] = (acc[category] || 0) + row.sales;
+                    }
+                    return acc;
+                }, {});
+                const bestCategory = Object.keys(salesByCategory).reduce((a, b) => salesByCategory[a] > salesByCategory[b] ? a : b, '');
+
+                // KPI 6: Most Profitable Region
+                const profitByRegion = data.reduce((acc, row) => {
+                    const region = row.region;
+                    if (region && typeof row.profit === 'number') {
+                        acc[region] = (acc[region] || 0) + row.profit;
+                    }
+                    return acc;
+                }, {});
+                const bestRegion = Object.keys(profitByRegion).reduce((a, b) => profitByRegion[a] > profitByRegion[b] ? a : b, '');
+
+                // KPI 8: Month-over-Month Growth
+                const monthlySales = data.reduce((acc, row) => {
+                    const date = new Date(row.date);
+                    if (isNaN(date.getTime()) || typeof row.sales !== 'number') return acc;
+                    const monthYear = date.toISOString().slice(0, 7); // Format YYYY-MM
+                    acc[monthYear] = (acc[monthYear] || 0) + row.sales;
+                    return acc;
+                }, {});
+
+                const sortedMonths = Object.keys(monthlySales).sort();
+                let momGrowth = 'N/A';
+                if (sortedMonths.length >= 2) {
+                    const lastMonthSales = monthlySales[sortedMonths[sortedMonths.length - 1]];
+                    const prevMonthSales = monthlySales[sortedMonths[sortedMonths.length - 2]];
+                    if (prevMonthSales !== 0) {
+                        momGrowth = (((lastMonthSales - prevMonthSales) / prevMonthSales) * 100).toFixed(2) + '%';
+                    }
+                }
+
+                document.getElementById('kpiTotalSales').textContent = totalSales.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                document.getElementById('kpiTotalProfit').textContent = totalProfit.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                document.getElementById('kpiAvgSale').textContent = avgSale.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                document.getElementById('kpiNumTransactions').textContent = numTransactions.toLocaleString('fr-FR');
+                document.getElementById('kpiBestCategory').textContent = bestCategory || 'N/A';
+                document.getElementById('kpiBestRegion').textContent = bestRegion || 'N/A';
+                document.getElementById('kpiAvgMargin').textContent = avgProfitMargin.toFixed(2) + '%';
+                document.getElementById('kpiMOMGrowth').textContent = momGrowth;
+            };
+
+            // K-Means Clustering Algorithm
+            const kMeans = (data, k, maxIterations = 100) => {
+                try {
+                    if (!data || data.length === 0) return [];
+                    const points = data.map(d => [d.sales, d.profit]).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+                    if (points.length < k) {
+                         showMessage(`Pas assez de points de donnees pour le clustering K-Means. Il faut au moins ${k} points.`, 'error');
+                         return [];
+                    }
+                    const centroids = [];
+                    const randomPoints = [...points].sort(() => 0.5 - Math.random()).slice(0, k);
+                    for (let i = 0; i < k; i++) {
+                        centroids.push(randomPoints[i]);
+                    }
+
+                    const euclideanDistance = (p1, p2) => Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));
+
+                    for (let i = 0; i < maxIterations; i++) {
+                        const clusters = Array.from({ length: k }, () => []);
+                        for (const point of points) {
+                            let minDistance = Infinity;
+                            let clusterIndex = -1;
+                            for (let j = 0; j < k; j++) {
+                                const distance = euclideanDistance(point, centroids[j]);
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    clusterIndex = j;
+                                }
+                            }
+                            if (clusterIndex !== -1) {
+                                clusters[clusterIndex].push(point);
+                            }
+                        }
+
+                        const newCentroids = clusters.map(cluster => {
+                            if (cluster.length === 0) return centroids[clusters.indexOf(cluster)];
+                            const sumX = cluster.reduce((sum, p) => sum + p[0], 0);
+                            const sumY = cluster.reduce((sum, p) => sum + p[1], 0);
+                            return [sumX / cluster.length, sumY / cluster.length];
+                        });
+                        if (JSON.stringify(newCentroids) === JSON.stringify(centroids)) {
+                            return clusters;
+                        }
+                        centroids.splice(0, centroids.length, ...newCentroids);
+                    }
+                    return clusters;
+                } catch (error) {
+                    console.error("K-Means clustering failed:", error);
+                    showMessage("Echec de la generation du graphique K-Means.", 'error');
+                    return [];
+                }
+            };
+
+            // Chart rendering functions
+            const renderAllCharts = (data) => {
+                // Destroy old charts to prevent memory leaks and conflicts
+                Object.values(chartInstances).forEach(chart => {
+                    if (chart) chart.destroy();
+                });
+                chartInstances = {};
+
+                // Render each chart
+                try { renderPieChart(data); } catch (e) { console.error('Pie Chart Error:', e); showMessage('Echec du rendu du graphique a secteurs.', 'error'); }
+                try { renderKMeansChart(data); } catch (e) { console.error('K-Means Chart Error:', e); showMessage('Echec du rendu du graphique K-Means.', 'error'); }
+                try { renderHistogramChart(data); } catch (e) { console.error('Histogram Chart Error:', e); showMessage('Echec du rendu de l\'histogramme.', 'error'); }
+                try { renderStackedHistogramChart(data); } catch (e) { console.error('Stacked Histogram Chart Error:', e); showMessage('Echec du rendu du graphique a barres empilees.', 'error'); }
+                try { renderTrendsChart(data); } catch (e) { console.error('Trends Chart Error:', e); showMessage('Echec du rendu du graphique de tendances.', 'error'); }
+                try { renderTemporalSeriesChart(data); } catch (e) { console.error('Temporal Series Chart Error:', e); showMessage('Echec du rendu du graphique de series temporelles.', 'error'); }
+                try { renderScatteringChart(data); } catch (e) { console.error('Scattering Chart Error:', e); showMessage('Echec du rendu du nuage de points.', 'error'); }
+                try { renderPrevisionChart(data); } catch (e) { console.error('Prevision Chart Error:', e); showMessage('Echec du rendu du graphique de prevision.', 'error'); }
+                try { renderSalesPrevisionChart(data); } catch (e) { console.error('Sales Prevision Chart Error:', e); showMessage('Echec du rendu de la prevision des ventes.', 'error'); } // New
+                try { renderAnomalyDetectionChart(data); } catch (e) { console.error('Anomaly Detection Chart Error:', e); showMessage('Echec du rendu de la detection d\'anomalies.', 'error'); } // New
+            };
+
+            // New Chart 0: Pie Chart
+            const renderPieChart = (data) => {
+                const ctx = document.getElementById('pieChart').getContext('2d');
+                const salesByCategory = data.reduce((acc, row) => {
+                    const category = row.category;
+                    if (category && typeof row.sales === 'number') {
+                        acc[category] = (acc[category] || 0) + row.sales;
+                    }
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(salesByCategory);
+                const salesData = Object.values(salesByCategory);
+                const backgroundColors = [
+                    '#4A90E2', '#50E3C2', '#F5A623', '#D0021B', '#BD10E0'
+                ];
+
+                chartInstances.pieChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: salesData,
+                            backgroundColor: backgroundColors,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: false,
+                                text: 'Repartition des Ventes par Categorie'
+                            }
+                        }
+                    }
+                });
+            };
+
+            // Chart 1: K-Means Clustering
+            const renderKMeansChart = (data) => {
+                const ctx = document.getElementById('kMeansChart').getContext('2d');
+                const numericData = data.filter(d => typeof d.sales === 'number' && typeof d.profit === 'number');
+                const clusters = kMeans(numericData, 3);
+                const colors = ['#4A90E2', '#50E3C2', '#F5A623'];
+
+                const datasets = clusters.map((cluster, index) => ({
+                    label: `Cluster ${index + 1}`,
+                    data: cluster.map(p => ({ x: p[0], y: p[1] })),
+                    backgroundColor: colors[index % colors.length],
+                    pointRadius: 5
+                }));
+
+                chartInstances.kMeansChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: { display: true, text: 'Ventes' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Profit' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // Chart 2: Histogram
+            const renderHistogramChart = (data) => {
+                const ctx = document.getElementById('histogramChart').getContext('2d');
+                const salesValues = data.map(d => d.sales).filter(v => typeof v === 'number');
+                const min = Math.min(...salesValues);
+                const max = Math.max(...salesValues);
+                const bins = 10;
+                const binSize = (max - min) / bins;
+                const labels = [];
+                const counts = new Array(bins).fill(0);
+
+                if (salesValues.length === 0) {
+                     // No data to display, return.
+                     return;
+                }
+
+                for (let i = 0; i < bins; i++) {
+                    const lowerBound = min + i * binSize;
+                    const upperBound = lowerBound + binSize;
+                    labels.push(`${lowerBound.toFixed(0)}-${upperBound.toFixed(0)}`);
+                    salesValues.forEach(val => {
+                        if (val >= lowerBound && val < upperBound) {
+                            counts[i]++;
+                        }
+                    });
+                    if (i === bins - 1) { // Include the max value in the last bin
+                        salesValues.forEach(val => {
+                            if (val == max) {
+                                counts[i]++;
+                            }
+                        });
+                    }
+                }
+
+                chartInstances.histogramChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Nombre de Ventes',
+                            data: counts,
+                            backgroundColor: '#60A5FA',
+                            borderColor: '#3B82F6',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Frequence' }
+                            },
+                            x: {
+                                title: { display: true, text: 'Tranches de Ventes' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            };
+
+            // Chart 3: Stacked Bar Chart
+            const renderStackedHistogramChart = (data) => {
+                const ctx = document.getElementById('stackedHistogramChart').getContext('2d');
+                const categories = [...new Set(data.map(d => d.category).filter(c => c))];
+                const regions = [...new Set(data.map(d => d.region).filter(r => r))];
+
+                const datasets = regions.map((region, index) => {
+                    return {
+                        label: region,
+                        data: categories.map(category =>
+                            data.filter(d => d.category === category && d.region === region)
+                                .reduce((sum, d) => sum + (typeof d.sales === 'number' ? d.sales : 0), 0)
+                        ),
+                        backgroundColor: ['#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD'][index % 4],
+                    };
+                });
+
+                chartInstances.stackedHistogramChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: categories,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true,
+                                title: { display: true, text: 'Categorie de Produit' }
+                            },
+                            y: {
+                                stacked: true,
+                                title: { display: true, text: 'Ventes Totales' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // Chart 4: Trends (Line Chart)
+            const renderTrendsChart = (data) => {
+                const ctx = document.getElementById('trendsChart').getContext('2d');
+                const monthlySales = data.reduce((acc, row) => {
+                    const date = new Date(row.date);
+                    if (isNaN(date.getTime()) || typeof row.sales !== 'number') return acc;
+                    const monthYear = date.toLocaleString('fr-FR', { month: 'short', year: 'numeric' });
+                    acc[monthYear] = (acc[monthYear] || 0) + row.sales;
+                    return acc;
+                }, {});
+
+                const sortedMonths = Object.keys(monthlySales).sort((a, b) => new Date(a) - new Date(b));
+                const salesData = sortedMonths.map(month => monthlySales[month]);
+
+                chartInstances.trendsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedMonths,
+                        datasets: [{
+                            label: 'Ventes Mensuelles',
+                            data: salesData,
+                            fill: false,
+                            borderColor: '#10B981',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Mois' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Ventes Totales' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // Chart 5: Temporal Series
+            const renderTemporalSeriesChart = (data) => {
+                const ctx = document.getElementById('temporalSeriesChart').getContext('2d');
+                const sortedData = data.filter(d => d.date && typeof d.profit === 'number').sort((a, b) => new Date(a.date) - new Date(b.date));
+                const labels = sortedData.map(d => d.date);
+                const profitData = sortedData.map(d => d.profit);
+
+                chartInstances.temporalSeriesChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Profit Quotidien',
+                            data: profitData,
+                            fill: false,
+                            borderColor: '#F97316',
+                            tension: 0.1,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: { unit: 'day' },
+                                title: { display: true, text: 'Date' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Profit' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // Chart 6: Scattering
+            const renderScatteringChart = (data) => {
+                const ctx = document.getElementById('scatteringChart').getContext('2d');
+                const datasets = [{
+                    label: 'Ventes vs Profit',
+                    data: data.map(d => ({ x: d.sales, y: d.profit })).filter(p => !isNaN(p.x) && !isNaN(p.y)),
+                    backgroundColor: '#A855F7',
+                    pointRadius: 5
+                }];
+
+                chartInstances.scatteringChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: { display: true, text: 'Ventes' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Profit' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            };
+
+            // Chart 7: Profit Prevision
+            const renderPrevisionChart = (data) => {
+                const ctx = document.getElementById('previsionChart').getContext('2d');
+                const sortedData = data.filter(d => d.date && typeof d.profit === 'number').sort((a, b) => new Date(a.date) - new Date(b.date));
+                const labels = sortedData.map(d => d.date);
+                const profitData = sortedData.map(d => d.profit);
+                const n = sortedData.length;
+
+                if (n === 0) {
+                    // No data to display, return.
+                    return;
+                }
+
+                // Simple linear regression calculation
+                const x = Array.from({ length: n }, (_, i) => i);
+                const sumX = x.reduce((a, b) => a + b, 0);
+                const sumY = profitData.reduce((a, b) => a + b, 0);
+                const sumXY = x.reduce((a, b, i) => a + b * profitData[i], 0);
+                const sumXX = x.reduce((a, b) => a + b * b, 0);
+
+                const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+
+                const forecastData = x.map(val => slope * val + intercept);
+
+                chartInstances.previsionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Profit Reel',
+                                data: profitData,
+                                borderColor: '#059669',
+                                backgroundColor: 'transparent',
+                                pointRadius: 3,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Tendance/Prevision de Profit',
+                                data: forecastData,
+                                borderColor: '#F59E0B',
+                                backgroundColor: 'transparent',
+                                borderDash: [5, 5],
+                                pointRadius: 0,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: { unit: 'day' },
+                                title: { display: true, text: 'Date' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Profit' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // NEW ML FEATURE: Sales Forecasting Chart
+            const renderSalesPrevisionChart = (data) => {
+                const ctx = document.getElementById('salesPrevisionChart').getContext('2d');
+                const sortedData = data.filter(d => d.date && typeof d.sales === 'number').sort((a, b) => new Date(a.date) - new Date(b.date));
+                const labels = sortedData.map(d => d.date);
+                const salesData = sortedData.map(d => d.sales);
+                const n = sortedData.length;
+
+                if (n === 0) {
+                    return;
+                }
+
+                // Simple linear regression calculation
+                const x = Array.from({ length: n }, (_, i) => i);
+                const sumX = x.reduce((a, b) => a + b, 0);
+                const sumY = salesData.reduce((a, b) => a + b, 0);
+                const sumXY = x.reduce((a, b, i) => a + b * salesData[i], 0);
+                const sumXX = x.reduce((a, b) => a + b * b, 0);
+
+                const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+
+                const forecastData = x.map(val => slope * val + intercept);
+
+                chartInstances.salesPrevisionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Ventes Reelles',
+                                data: salesData,
+                                borderColor: '#1E40AF',
+                                backgroundColor: 'transparent',
+                                pointRadius: 3,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Tendance/Prevision des Ventes',
+                                data: forecastData,
+                                borderColor: '#F97316',
+                                backgroundColor: 'transparent',
+                                borderDash: [5, 5],
+                                pointRadius: 0,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: { unit: 'day' },
+                                title: { display: true, text: 'Date' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Ventes' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // NEW ML FEATURE: Anomaly Detection Chart
+            const renderAnomalyDetectionChart = (data) => {
+                const ctx = document.getElementById('anomalyDetectionChart').getContext('2d');
+                const numericData = data.filter(d => typeof d.sales === 'number');
+                const salesValues = numericData.map(d => d.sales);
+
+                if (salesValues.length < 2) {
+                    showMessage("Pas assez de donnees pour la detection d'anomalies.", 'error');
+                    return;
+                }
+
+                // Calculate mean and standard deviation
+                const mean = salesValues.reduce((sum, val) => sum + val, 0) / salesValues.length;
+                const stdDev = Math.sqrt(salesValues.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / salesValues.length);
+                const anomalyThreshold = 2; // 2 standard deviations
+
+                const datasets = [
+                    {
+                        label: 'Ventes Normales',
+                        data: [],
+                        backgroundColor: '#60A5FA',
+                        pointRadius: 5
+                    },
+                    {
+                        label: 'Anomalies',
+                        data: [],
+                        backgroundColor: '#EF4444',
+                        pointRadius: 7,
+                        pointStyle: 'crossRot'
+                    }
+                ];
+
+                numericData.forEach((d, index) => {
+                    const point = { x: index, y: d.sales };
+                    if (Math.abs(d.sales - mean) > anomalyThreshold * stdDev) {
+                        datasets[1].data.push(point);
+                    } else {
+                        datasets[0].data.push(point);
+                    }
+                });
+
+                chartInstances.anomalyDetectionChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: { display: true, text: 'Index de la transaction' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Ventes' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true }
+                        }
+                    }
+                });
+            };
+
+            // NEW ML FEATURE: Customer Sentiment Analysis
+            const analyzeSentiment = () => {
+                const text = sentimentInput.value.toLowerCase();
+                const positiveKeywords = ['excellent', 'super', 'fantastique', 'merci', 'adore', 'satisfait', 'recommande', 'rapide', 'efficace', 'incroyable'];
+                const negativeKeywords = ['mauvais', 'horrible', 'lent', 'déçu', 'problème', 'nul', 'déteste', 'insatisfait', 'erreur', 'dommage'];
+
+                let positiveCount = 0;
+                let negativeCount = 0;
+
+                positiveKeywords.forEach(keyword => {
+                    if (text.includes(keyword)) {
+                        positiveCount++;
+                    }
+                });
+
+                negativeKeywords.forEach(keyword => {
+                    if (text.includes(keyword)) {
+                        negativeCount++;
+                    }
+                });
+
+                sentimentResult.classList.remove('hidden', 'bg-red-500', 'bg-green-500', 'bg-gray-500');
+
+                if (positiveCount > negativeCount) {
+                    sentimentResult.textContent = `Sentiment: Positif (Score: +${positiveCount})`;
+                    sentimentResult.classList.add('bg-green-500');
+                } else if (negativeCount > positiveCount) {
+                    sentimentResult.textContent = `Sentiment: Negatif (Score: -${negativeCount})`;
+                    sentimentResult.classList.add('bg-red-500');
+                } else {
+                    sentimentResult.textContent = `Sentiment: Neutre`;
+                    sentimentResult.classList.add('bg-gray-500');
+                }
+            };
+
+            // Event listener for sentiment analysis button
+            analyzeSentimentBtn.addEventListener('click', analyzeSentiment);
+
+            // Re-render all charts and update the UI when data is loaded
+            const updateDashboard = () => {
+                if (parsedData.length > 0) {
+                    loadDashboardWithData(parsedData, Object.keys(parsedData[0]));
+                }
+            };
+        });
+    </script>
+</body>
+</html>
