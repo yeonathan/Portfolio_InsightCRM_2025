@@ -94,3 +94,7 @@ Ce projet peut être :
 
 Ce projet est un prototype conçu pour la **visualisation locale de données CRM**, incluant des outils de BI simples et des démonstrations d’IA basées sur des règles.
 
+## URL 
+
+https://yeonathan.github.io/Portfolio_InsightCRM_2025/
+
