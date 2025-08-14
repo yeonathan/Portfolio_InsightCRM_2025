@@ -1,0 +1,11 @@
+Client,Produit,Montant,Date,Region
+Alice,T-shirt,200,2025-07-01,Nord
+Bob,Pantalon,350,2025-07-01,Nord
+Charlie,Chaussures,150,2025-07-02,Sud
+Alice,Casquette,100,2025-07-03,Nord
+David,Chaussures,250,2025-07-03,Sud
+Bob,T-shirt,200,2025-07-04,Nord
+Emma,Pantalon,300,2025-07-05,Est
+Frank,Casquette,120,2025-07-06,Est
+Emma,Chaussures,180,2025-07-07,Est
+George,Pantalon,310,2025-07-08,Sud
