@@ -65,7 +65,7 @@ Ce projet est une application web interactive qui permet de charger des fichiers
 
 1. Ouvrez `index.html` dans votre navigateur.
 2. Cliquez sur **Téléchargez votre fichier CSV** pour importer vos données.
-3. Explorez les **KPIs**, les **graphiques**, et discutez avec **l’assistant IA**.
+3. Explorez les **KPIs**, les **graphiques**, et discutez avec **l’assistant**.
 4. Essayez les fonctionnalités ML dans la section "Fonctionnalités ML avancées".
 
 ## 📌 Données attendues dans le CSV
